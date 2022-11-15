@@ -31,6 +31,7 @@ function populateTextarea() {
   const savedMessage = JSON.parse(localStorage.getItem(STORAGE_KEY));
 
   if (savedMessage === null) {
+    //console.log(savedMessage);
     return;
   }
   refs.textarea.value = savedMessage['message'] || '';

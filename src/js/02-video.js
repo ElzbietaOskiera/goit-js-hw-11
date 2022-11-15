@@ -2,33 +2,42 @@ import '../css/common.css';
 import Player from '@vimeo/player';
 import throttle from 'lodash.throttle';
 
-const TIME_KEY = 'videoplayer-current-time';
-const iframe = document.querySelector('iframe');
+const iframe = document.querySelector('iframe#vimeo-player');
 const player = new Vimeo.Player(iframe);
 
-const onPlay = function (data) {
-  const strigifyData = JSON.stringify(data);
-  localStorage.setItem(TIME_KEY, strigifyData);
-};
-player.on('timeupdate', throttle(onPlay, 1000));
+player.on('play', () => {
+  console.log('played the video!');
+});
 
-function resumePlayback() {
-  if (JSON.parse(localStorage.getItem(TIME_KEY)) === null) {
-    return;
+player.getVideoTitle().then(title => {
+  console.log('title:', title);
+});
+
+const savePlayerTime = ({ duration, percent, seconds }) => {
+  console.log(seconds);
+  localStorage.setItem('videoplayer-current-time', seconds);
+};
+
+player.on('timeupdate', throttle(savePlayerTime, 1000));
+
+const getLocalLastPlayedTime = () => {
+  const defaultTime = 0;
+  try {
+    const locallySavedTime = localStorage.getItem('videoplayer-current-time');
+    if (!locallySavedTime) return defaultTime;
+
+    const parsedTime = JSON.parse(locallySavedTime);
+    return Number(parsedTime);
+  } catch (error) {
+    console.log({ error });
+    return defaultTime;
   }
-  const paused = JSON.parse(localStorage.getItem(TIME_KEY))['seconds'];
-  if (paused) {
-    player
-      .setCurrentTime(paused)
-      .then(function (seconds) {})
-      .catch(function (error) {
-        switch (error.name) {
-          case 'Error':
-            break;
-          default:
-            break;
-        }
-      });
-  }
-}
-resumePlayback();
+};
+
+const resumePlayerOnLastPlayed = () => {
+  const lastPlayedTime = getLocalLastPlayedTime();
+  player.setCurrentTime(lastPlayedTime);
+  // player.play();
+};
+
+resumePlayerOnLastPlayed();
