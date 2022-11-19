@@ -2,38 +2,45 @@ import '../css/common.css';
 import '../css/03-feedback.css';
 import throttle from 'lodash.throttle';
 
-const STORAGE_KEY = 'feedback-form-state';
-const refs = {
-  form: document.querySelector('.feedback-form'),
-  textarea: document.querySelector('.feedback-form textarea'),
-  input: document.querySelector('input'),
-};
-const formData = {};
+const KEY = 'feedback-form-state';
+const form = document.querySelector('.feedback-form');
+const email = document.querySelector("[name='email']");
+const message = document.querySelector("[name='message']");
+const btn = document.querySelector("[type='submit']");
 
-populateTextarea();
-
-refs.form.addEventListener('input', throttle(onTextareaInput, 500));
-
-refs.form.addEventListener('submit', e => {
-  e.preventDefault();
-  e.currentTarget.reset();
-  const objData = JSON.parse(localStorage.getItem(STORAGE_KEY));
-  localStorage.removeItem(STORAGE_KEY);
-});
-
-function onTextareaInput(e) {
-  formData[e.target.name] = e.target.value;
-  const stringifiedData = JSON.stringify(formData);
-  localStorage.setItem(STORAGE_KEY, stringifiedData);
+class User {
+  constructor(email, message) {
+    this.email = email;
+    this.message = message;
+  }
 }
 
-function populateTextarea() {
-  const savedMessage = JSON.parse(localStorage.getItem(STORAGE_KEY));
+const preloadValue = () => {
+  const data = JSON.parse(localStorage.getItem(KEY));
+  if (data === null) return;
+  email.value = data.email;
+  message.value = data.message;
+};
 
-  if (savedMessage === null) {
-    //console.log(savedMessage);
+const handleInput = () => {
+  const user = { email: email.value, message: message.value };
+  localStorage.setItem(KEY, JSON.stringify(user));
+};
+
+const handleSubmit = event => {
+  event.preventDefault();
+  const {
+    elements: { email, message },
+  } = event.currentTarget;
+  if (email.value === '' || message.value === '') {
+    alert('Just do not leave empty fields');
     return;
   }
-  refs.textarea.value = savedMessage['message'] || '';
-  refs.input.value = savedMessage['email'] || '';
-}
+  console.log(new User(email.value, message.value));
+  form.reset();
+  localStorage.removeItem(KEY);
+};
+
+window.addEventListener('load', preloadValue);
+form.addEventListener('input', throttle(handleInput, 500));
+form.addEventListener('submit', handleSubmit);

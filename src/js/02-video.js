@@ -4,6 +4,7 @@ import throttle from 'lodash.throttle';
 
 const iframe = document.querySelector('iframe#vimeo-player');
 const player = new Vimeo.Player(iframe);
+const KEY = 'videoplayer-current-time';
 
 player.on('play', () => {
   console.log('played the video!');
@@ -15,29 +16,22 @@ player.getVideoTitle().then(title => {
 
 const savePlayerTime = ({ duration, percent, seconds }) => {
   console.log(seconds);
-  localStorage.setItem('videoplayer-current-time', seconds);
+  localStorage.setItem(KEY, seconds);
 };
 
-player.on('timeupdate', throttle(savePlayerTime, 1000));
+const throttled = throttle(savePlayerTime, 1000, { trailing: false });
 
-const getLocalLastPlayedTime = () => {
-  const defaultTime = 0;
-  try {
-    const locallySavedTime = localStorage.getItem('videoplayer-current-time');
-    if (!locallySavedTime) return defaultTime;
+player.on('timeupdate', throttled);
 
-    const parsedTime = JSON.parse(locallySavedTime);
-    return Number(parsedTime);
-  } catch (error) {
-    console.log({ error });
-    return defaultTime;
-  }
-};
+const end = () => {
+  player.off('timeupdate', throttled);
+  localStorage.removeItem(KEY)
+}
 
-const resumePlayerOnLastPlayed = () => {
-  const lastPlayedTime = getLocalLastPlayedTime();
-  player.setCurrentTime(lastPlayedTime);
-  // player.play();
-};
+player.on('ended', end)
 
-resumePlayerOnLastPlayed();
+const savedTime = localStorage.getItem(KEY);
+
+if (savedTime) {
+  player.setCurrentTime(savedTime);
+}
